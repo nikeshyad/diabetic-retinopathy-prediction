@@ -1,0 +1,663 @@
+---
+title: "Diabetic Retinopathy Prediction"
+author: "Nikesh Yadav"
+date: "12/20/2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+
+Load the libraries
+
+```{r}
+library(imager)
+library(EBImage)
+library(randomForest)
+library(glmnet)
+library(e1071)
+```
+
+Handy dandy function to extract the grayscale pixel values of resized images
+
+```{r}
+GSvals <- function(eye_Image) {
+  im <- load.image(eye_Image)
+  gray <- grayscale(im)
+  resize.im <- resize(gray, w=100, h=100)
+  mat <- matrix(resize.im, nrow=1)
+  return(mat)
+}
+```
+
+
+How does the diabetic eyes look?
+
+```{r}
+diabetic <- load.image("eyes/dr3.jpg")
+plot(diabetic)
+```
+
+And the healthy eyes?
+
+```{r}
+healthy <- load.image("eyes/h15.jpg")
+plot(healthy)
+```
+
+How the resized grayscale 100 * 100 image look?
+
+```{r}
+resiz <- resize(diabetic, w=100, h=100)
+gr <- grayscale(resiz)
+plot(gr)
+```
+
+
+Load pixel values for Diabetic Retinopathy eyes
+
+```{r}
+dr1 <- GSvals("eyes/dr1.jpg")
+dr2 <- GSvals("eyes/dr2.jpg")
+dr3 <- GSvals("eyes/dr3.jpg")
+dr4 <- GSvals("eyes/dr4.jpg")
+dr5 <- GSvals("eyes/dr5.jpg")
+dr6 <- GSvals("eyes/dr6.jpg")
+dr7 <- GSvals("eyes/dr7.jpg")
+dr8 <- GSvals("eyes/dr8.jpg")
+dr9 <- GSvals("eyes/dr9.jpg")
+dr10 <- GSvals("eyes/dr10.jpg")
+dr11 <- GSvals("eyes/dr11.jpg")
+dr12 <- GSvals("eyes/dr12.jpg")
+dr13 <- GSvals("eyes/dr13.jpg")
+dr14 <- GSvals("eyes/dr14.jpg")
+dr15 <- GSvals("eyes/dr15.jpg")
+dr16 <- GSvals("eyes/dr16.jpg")
+dr17 <- GSvals("eyes/dr17.jpg")
+dr18 <- GSvals("eyes/dr18.jpg")
+dr19 <- GSvals("eyes/dr19.jpg")
+dr20 <- GSvals("eyes/dr20.jpg")
+dr21 <- GSvals("eyes/dr21.jpg")
+dr22 <- GSvals("eyes/dr22.jpg")
+dr23 <- GSvals("eyes/dr23.jpg")
+dr24 <- GSvals("eyes/dr24.jpg")
+dr25 <- GSvals("eyes/dr25.jpg")
+dr26 <- GSvals("eyes/dr29.jpg")
+dr27 <- GSvals("eyes/dr27.jpg")
+dr28 <- GSvals("eyes/dr28.jpg")
+dr29 <- GSvals("eyes/dr29.jpg")
+dr30 <- GSvals("eyes/dr30.jpg")
+dr31 <- GSvals("eyes/dr31.jpg")
+dr32 <- GSvals("eyes/dr32.jpg")
+dr33 <- GSvals("eyes/dr33.jpg")
+dr34 <- GSvals("eyes/dr34.jpg")
+dr35 <- GSvals("eyes/dr35.jpg")
+dr36 <- GSvals("eyes/dr36.jpg")
+dr37 <- GSvals("eyes/dr37.jpg")
+dr38 <- GSvals("eyes/dr38.jpg")
+dr39 <- GSvals("eyes/dr39.jpg")
+dr40 <- GSvals("eyes/dr40.jpg")
+dr41 <- GSvals("eyes/dr41.jpg")
+dr42 <- GSvals("eyes/dr42.jpg")
+dr43 <- GSvals("eyes/dr43.jpg")
+dr44 <- GSvals("eyes/dr44.jpg")
+dr45 <- GSvals("eyes/dr45.jpg")
+dr46 <- GSvals("eyes/dr46.jpg")
+dr47 <- GSvals("eyes/dr47.jpg")
+dr48 <- GSvals("eyes/dr48.jpg")
+dr49 <- GSvals("eyes/dr49.jpg")
+dr50 <- GSvals("eyes/dr50.jpg")
+dr51 <- GSvals("eyes/dr51.jpg")
+dr52 <- GSvals("eyes/dr52.jpg")
+dr53 <- GSvals("eyes/dr53.jpg")
+dr54 <- GSvals("eyes/dr54.jpg")
+dr55 <- GSvals("eyes/dr55.jpg")
+dr56 <- GSvals("eyes/dr56.jpg")
+dr57 <- GSvals("eyes/dr57.jpg")
+dr58 <- GSvals("eyes/dr58.jpg")
+dr59 <- GSvals("eyes/dr59.jpg")
+dr60 <- GSvals("eyes/dr60.jpg")
+dr61 <- GSvals("eyes/dr61.jpg")
+dr62 <- GSvals("eyes/dr62.jpg")
+dr63 <- GSvals("eyes/dr63.jpg")
+dr64 <- GSvals("eyes/dr64.jpg")
+dr65 <- GSvals("eyes/dr65.jpg")
+dr66 <- GSvals("eyes/dr66.jpg")
+dr67 <- GSvals("eyes/dr67.jpg")
+dr68 <- GSvals("eyes/dr68.jpg")
+dr69 <- GSvals("eyes/dr69.jpg")
+dr70 <- GSvals("eyes/dr70.jpg")
+dr71 <- GSvals("eyes/dr71.jpg")
+dr72 <- GSvals("eyes/dr72.jpg")
+dr73 <- GSvals("eyes/dr73.jpg")
+dr74 <- GSvals("eyes/dr74.jpg")
+dr75 <- GSvals("eyes/dr75.jpg")
+dr76 <- GSvals("eyes/dr76.jpg")
+dr77 <- GSvals("eyes/dr77.jpg")
+dr78 <- GSvals("eyes/dr78.jpg")
+dr79 <- GSvals("eyes/dr79.jpg")
+dr80<- GSvals("eyes/dr80.jpg")
+dr81 <- GSvals("eyes/dr81.jpg")
+dr82 <- GSvals("eyes/dr82.jpg")
+dr83 <- GSvals("eyes/dr83.jpg")
+dr84 <- GSvals("eyes/dr84.jpg")
+dr85 <- GSvals("eyes/dr85.jpg")
+dr86 <- GSvals("eyes/dr86.jpg")
+dr87 <- GSvals("eyes/dr87.jpg")
+dr88 <- GSvals("eyes/dr88.jpg")
+dr89 <- GSvals("eyes/dr89.jpg")
+```
+
+Load the pixel values for healthy eyes
+
+```{r}
+h1 <- GSvals("eyes/h1.jpg")
+h2 <- GSvals("eyes/h2.jpg")
+h3 <- GSvals("eyes/h3.jpg")
+h4 <- GSvals("eyes/h4.jpg")
+h5 <- GSvals("eyes/h5.jpg")
+h6 <- GSvals("eyes/h6.jpg")
+h7 <- GSvals("eyes/h7.jpg")
+h8 <- GSvals("eyes/h8.jpg")
+h9 <- GSvals("eyes/h9.jpg")
+h10 <- GSvals("eyes/h10.jpg")
+h11 <- GSvals("eyes/h11.jpg")
+h12 <- GSvals("eyes/h12.jpg")
+h13 <- GSvals("eyes/h13.jpg")
+h14 <- GSvals("eyes/h14.jpg")
+h15 <- GSvals("eyes/h15.jpg")
+h16 <- GSvals("eyes/h16.jpg")
+h17 <- GSvals("eyes/h17.jpg")
+h18 <- GSvals("eyes/h18.jpg")
+h19 <- GSvals("eyes/h19.jpg")
+h20 <- GSvals("eyes/h20.jpg")
+h21 <- GSvals("eyes/h21.jpg")
+h22 <- GSvals("eyes/h22.jpg")
+h23 <- GSvals("eyes/h23.jpg")
+h24 <- GSvals("eyes/h24.jpg")
+h25 <- GSvals("eyes/h25.jpg")
+h26 <- GSvals("eyes/h26.jpg")
+h27 <- GSvals("eyes/h27.jpg")
+h28 <- GSvals("eyes/h28.jpg")
+h29 <- GSvals("eyes/h29.jpg")
+h30 <- GSvals("eyes/h30.jpg")
+h31 <- GSvals("eyes/h31.jpg")
+h32 <- GSvals("eyes/h32.jpg")
+h33 <- GSvals("eyes/h33.jpg")
+h34 <- GSvals("eyes/h34.jpg")
+h35 <- GSvals("eyes/h35.jpg")
+h36 <- GSvals("eyes/h36.jpg")
+h37 <- GSvals("eyes/h37.jpg")
+h38 <- GSvals("eyes/h38.jpg")
+h39 <- GSvals("eyes/h39.jpg")
+h40 <- GSvals("eyes/h40.jpg")
+```
+
+
+Create a data frame eye.df where each row consists of pixel values of each image and a response variable. Assign the response variable as 1 for diabetic retinopathy and 0 for healthy eyes
+
+```{r}
+type = c(rep(1,89), rep(0,40))
+eye.df <- data.frame(rbind(
+  dr1,dr2,dr3,dr4,dr5,dr6,dr7,dr8,dr9,dr10,dr11,dr12,dr13,dr14,dr15,dr16,dr17,dr18,
+  dr19,dr20,dr21,dr22,dr23,dr24,dr25,dr26,dr27,dr28,dr29,dr30,dr31,dr32,dr33,dr34,
+  dr35,dr36,dr37,dr38,dr39,dr40,dr41,dr42,dr43,dr44,dr45,dr46,dr47,dr48,dr49,dr50,
+  dr51,dr52,dr53,dr54,dr55,dr56,dr57,dr58,dr59,dr60,dr61,dr62,dr63,dr64,dr65,dr66,
+  dr67,dr68,dr69,dr70,dr71,dr72,dr73,dr74,dr75,dr76,dr77,dr78,dr79,dr80,dr81,dr82,
+  dr83,dr84,dr85,dr86,dr87,dr88,dr89,h1,h2,h3,h4,h5,h6,h7,h8,h9,h10,h11,h12,h13,h14,
+  h15,h16,h17,h18,h19,h20,h21,h22,h23,h24,h25,h26,h27,h28,h29,h30,h31,h32,h33,h34,
+  h35,h36,h37,h38,h39,h40), 
+                     
+  resp=type)
+```
+
+Take principal components of newly created eye.df that has 10,000 predictors
+
+```{r}
+eye.df_noresp <- eye.df[,-ncol(eye.df)]
+pca.eye <- prcomp(eye.df_noresp, scale=T)
+summary(pca.eye) 
+
+#The rotation matrix
+rots <- pca.eye$rotation 
+dim(rots) 
+eye.mat <- as.matrix(eye.df_noresp[,1:ncol(eye.df_noresp)]) 
+dim(eye.mat) 
+
+#Principal components
+pcs <- eye.mat %*% rots
+dim(pcs) 
+
+#Data frame with principal components as predictors and the corresponding response variable
+prcomp.df <- data.frame(pcs, resp = type)
+```
+
+Try RandomForest on the principal components
+
+```{r}
+nr <- nrow(prcomp.df)
+test <- sample(1:nr, nr/2, rep=F)
+train <- setdiff(1:nr, test)
+
+test.df <- prcomp.df[test,]
+train.df <- prcomp.df[train,]
+
+rf <- randomForest(as.factor(resp)~., data=train.df, ntree=500)
+pred <- predict(rf, newdata = test.df)
+pred
+test.df$resp
+mean(pred != test.df$resp)
+```
+
+Now let's try LASSO on 10,000 predictors with lambda from 10^-2 - 10^2 divided into 100 sequences
+
+```{r}
+x <- data.matrix(eye.df[,-ncol(eye.df)])
+y <- data.matrix(eye.df[,ncol(eye.df)])
+test <- sample(1:nr, nr/2, rep=F)
+train <- setdiff(1:nr, test)
+x.train <- x[train,]
+y.train <- y[train,]
+x.test <- x[test,]
+y.test <- y[test,]
+
+cv.lasso <- cv.glmnet(x.train, y.train, alpha = 1, family="binomial")
+cv.lasso$lambda.min
+cv.lasso$lambda.1se
+
+error <- rep(0,100)
+i <- 1
+for (lamb in 10^seq(-2,2, length = 100)) {
+  test <- sample(1:nr, nr/2, rep=F)
+  train <- setdiff(1:nr, test)
+  x.train <- x[train,]
+  y.train <- y[train,]
+  x.test <- x[test,]
+  y.test <- y[test,]
+  fit.lasso <- glmnet(x.train, y.train, alpha = 1, lambda = lamb, family = "binomial")
+  pred.lasso <- predict(fit.lasso, newx = x.test, type="class")
+  error[i] = mean(as.numeric(pred.lasso) != y.test)
+  i <- i+1
+} 
+print(error)
+min(error)
+```
+
+How does it look for lambda values in between cv.lasso$lambda.min and cv.lasso$lambda.1se
+
+```{r}
+i <- 1
+for (lamb in seq(cv.lasso$lambda.min, cv.lasso$lambda.1se, length=100)) {
+  test <- sample(1:nr, nr/2, rep=F)
+  train <- setdiff(1:nr, test)
+  x.train <- x[train,]
+  y.train <- y[train,]
+  x.test <- x[test,]
+  y.test <- y[test,]
+  fit.lasso <- glmnet(x.train, y.train, alpha = 1, lambda = lamb, family = "binomial")
+  pred.lasso <- predict(fit.lasso, newx = x.test, type="class")
+  error[i] = mean(as.numeric(pred.lasso) != y.test)
+  i <- i+1
+} 
+print(error)
+min(error)
+```
+
+How does the LASSO model look?
+
+```{r}
+fit.lasso <- glmnet(x.train, y.train, alpha=1, lambda = cv.lasso$lambda.min, family="binomial")
+coef(fit.lasso) 
+```
+
+Lasso on Principal Components
+
+```{r}
+x <- data.matrix(prcomp.df[,-ncol(prcomp.df)])
+y <- data.matrix(prcomp.df[,ncol(prcomp.df)])
+test <- sample(1:nr, nr/2, rep=F)
+train <- setdiff(1:nr, test)
+x.train <- x[train,]
+y.train <- y[train,]
+x.test <- x[test,]
+y.test <- y[test,]
+
+cv.lasso <- cv.glmnet(x.train, y.train, alpha = 1, family="binomial")
+cv.lasso$lambda.min
+cv.lasso$lambda.1se
+
+error <- rep(0,100)
+i <- 1
+for (lamb in seq(cv.lasso$lambda.min, cv.lasso$lambda.1se, length=100)) {
+  test <- sample(1:nr, nr/2, rep=F)
+  train <- setdiff(1:nr, test)
+  x.train <- x[train,]
+  y.train <- y[train,]
+  x.test <- x[test,]
+  y.test <- y[test,]
+  fit.lasso <- glmnet(x.train, y.train, alpha = 1, lambda = lamb, family = "binomial")
+  pred.lasso <- predict(fit.lasso, newx = x.test, type="class")
+  error[i] = mean(as.numeric(pred.lasso) != y.test)
+  i <- i+1
+}
+error
+min(error)
+```
+
+Ridge Regression on Principal Components
+
+```{r}
+x <- data.matrix(prcomp.df[,-ncol(prcomp.df)])
+y <- data.matrix(prcomp.df[,ncol(prcomp.df)])
+test <- sample(1:nr, nr/2, rep=F)
+train <- setdiff(1:nr, test)
+x.train <- x[train,]
+y.train <- y[train,]
+x.test <- x[test,]
+y.test <- y[test,]
+
+cv.ridge <- cv.glmnet(x.train, y.train, alpha = 0, family="binomial")
+cv.ridge$lambda.min
+cv.ridge$lambda.1se
+
+error <- rep(0,100)
+i <- 1
+for (lamb in seq(cv.ridge$lambda.min,cv.ridge$lambda.1se,length = 100)) {
+  test <- sample(1:nr, nr/2, rep=F)
+  train <- setdiff(1:nr, test)
+  x.train <- x[train,]
+  y.train <- y[train,]
+  x.test <- x[test,]
+  y.test <- y[test,]
+  fit.ridge <- glmnet(x.train, y.train, alpha = 0, lambda = lamb, family = "binomial")
+  pred.ridge <- predict(fit.ridge, newx = x.test, type="class")
+  error[i] = mean(as.numeric(pred.ridge) != y.test)
+  i <- i+1
+}
+error
+min(error)
+```
+
+SVM on Principal Components with Radial kernel
+
+```{r}
+test <- sample(1:nr, nr/2, rep=F)
+train <- setdiff(1:nr, test)
+test.df <- prcomp.df[test,]
+train.df <- prcomp.df[train,]
+
+tune.svm <-
+  tune(svm,as.factor(resp) ~.,
+       data=train.df,
+       kernel="radial",
+       scale=F,
+       ranges=list(cost=10^seq(-5,5,length=50), gamma=10^seq(-5,5)),
+       ##use cross=3 to speed up
+       tunecontrol=tune.control(cross=3))
+
+C <- tune.svm$best.parameters[1]
+G <- tune.svm$best.parameters[2]
+C
+G
+
+svmfit <- svm(as.factor(resp) ~., 
+              data = train.df,
+              kernel = "radial",
+              cost = C,
+              gamma = G,
+              scale = F)
+pred.svm <- predict(svmfit, newdata = test.df)
+pred.svm
+test.df$resp
+mean(pred.svm != test.df$resp)
+
+```
+
+SVM with Polynomial kernel
+
+```{r}
+test <- sample(1:nr, nr/2, rep=F)
+train <- setdiff(1:nr, test)
+test.df <- prcomp.df[test,]
+train.df <- prcomp.df[train,]
+
+tune.svm <-
+  tune(svm,as.factor(resp) ~.,
+       data=train.df,
+       kernel="polynomial",
+       scale=F,
+       ranges=list(cost=10^seq(-10,10,length=50), d=seq(1,10)),
+       ##use cross=3 to speed up
+       tunecontrol=tune.control(cross=3))
+
+C <- tune.svm$best.parameters[1]
+D <- tune.svm$best.parameters[2]
+C
+D
+
+svmfit <- svm(as.factor(resp) ~., 
+              data = train.df,
+              kernel = "polynomial",
+              cost = C,
+              degree = D,
+              scale = F)
+pred.svm <- predict(svmfit, newdata = test.df)
+pred.svm
+test.df$resp
+mean(pred.svm != test.df$resp)
+```
+
+
+#Now let's resize the images to 10 * 10 !!
+
+How will the image look when resize to 10 * 10?
+
+```{r}
+resiz <- resize(diabetic, w=10, h=10)
+gr <- grayscale(resiz)
+plot(gr)
+```
+
+
+Do same things done above
+
+```{r}
+GSvals <- function(eye_Image) {
+  im <- load.image(eye_Image)
+  gray <- grayscale(im)
+  resize.im <- resize(gray, w=10, h=10)
+  mat <- matrix(resize.im, nrow=1)
+  return(mat)
+}
+
+#Diabetic Retinopathy
+dr1 <- GSvals("eyes/dr1.jpg")
+dr2 <- GSvals("eyes/dr2.jpg")
+dr3 <- GSvals("eyes/dr3.jpg")
+dr4 <- GSvals("eyes/dr4.jpg")
+dr5 <- GSvals("eyes/dr5.jpg")
+dr6 <- GSvals("eyes/dr6.jpg")
+dr7 <- GSvals("eyes/dr7.jpg")
+dr8 <- GSvals("eyes/dr8.jpg")
+dr9 <- GSvals("eyes/dr9.jpg")
+dr10 <- GSvals("eyes/dr10.jpg")
+dr11 <- GSvals("eyes/dr11.jpg")
+dr12 <- GSvals("eyes/dr12.jpg")
+dr13 <- GSvals("eyes/dr13.jpg")
+dr14 <- GSvals("eyes/dr14.jpg")
+dr15 <- GSvals("eyes/dr15.jpg")
+dr16 <- GSvals("eyes/dr16.jpg")
+dr17 <- GSvals("eyes/dr17.jpg")
+dr18 <- GSvals("eyes/dr18.jpg")
+dr19 <- GSvals("eyes/dr19.jpg")
+dr20 <- GSvals("eyes/dr20.jpg")
+dr21 <- GSvals("eyes/dr21.jpg")
+dr22 <- GSvals("eyes/dr22.jpg")
+dr23 <- GSvals("eyes/dr23.jpg")
+dr24 <- GSvals("eyes/dr24.jpg")
+dr25 <- GSvals("eyes/dr25.jpg")
+dr26 <- GSvals("eyes/dr29.jpg")
+dr27 <- GSvals("eyes/dr27.jpg")
+dr28 <- GSvals("eyes/dr28.jpg")
+dr29 <- GSvals("eyes/dr29.jpg")
+dr30 <- GSvals("eyes/dr30.jpg")
+dr31 <- GSvals("eyes/dr31.jpg")
+dr32 <- GSvals("eyes/dr32.jpg")
+dr33 <- GSvals("eyes/dr33.jpg")
+dr34 <- GSvals("eyes/dr34.jpg")
+dr35 <- GSvals("eyes/dr35.jpg")
+dr36 <- GSvals("eyes/dr36.jpg")
+dr37 <- GSvals("eyes/dr37.jpg")
+dr38 <- GSvals("eyes/dr38.jpg")
+dr39 <- GSvals("eyes/dr39.jpg")
+dr40 <- GSvals("eyes/dr40.jpg")
+dr41 <- GSvals("eyes/dr41.jpg")
+dr42 <- GSvals("eyes/dr42.jpg")
+dr43 <- GSvals("eyes/dr43.jpg")
+dr44 <- GSvals("eyes/dr44.jpg")
+dr45 <- GSvals("eyes/dr45.jpg")
+dr46 <- GSvals("eyes/dr46.jpg")
+dr47 <- GSvals("eyes/dr47.jpg")
+dr48 <- GSvals("eyes/dr48.jpg")
+dr49 <- GSvals("eyes/dr49.jpg")
+dr50 <- GSvals("eyes/dr50.jpg")
+dr51 <- GSvals("eyes/dr51.jpg")
+dr52 <- GSvals("eyes/dr52.jpg")
+dr53 <- GSvals("eyes/dr53.jpg")
+dr54 <- GSvals("eyes/dr54.jpg")
+dr55 <- GSvals("eyes/dr55.jpg")
+dr56 <- GSvals("eyes/dr56.jpg")
+dr57 <- GSvals("eyes/dr57.jpg")
+dr58 <- GSvals("eyes/dr58.jpg")
+dr59 <- GSvals("eyes/dr59.jpg")
+dr60 <- GSvals("eyes/dr60.jpg")
+dr61 <- GSvals("eyes/dr61.jpg")
+dr62 <- GSvals("eyes/dr62.jpg")
+dr63 <- GSvals("eyes/dr63.jpg")
+dr64 <- GSvals("eyes/dr64.jpg")
+dr65 <- GSvals("eyes/dr65.jpg")
+dr66 <- GSvals("eyes/dr66.jpg")
+dr67 <- GSvals("eyes/dr67.jpg")
+dr68 <- GSvals("eyes/dr68.jpg")
+dr69 <- GSvals("eyes/dr69.jpg")
+dr70 <- GSvals("eyes/dr70.jpg")
+dr71 <- GSvals("eyes/dr71.jpg")
+dr72 <- GSvals("eyes/dr72.jpg")
+dr73 <- GSvals("eyes/dr73.jpg")
+dr74 <- GSvals("eyes/dr74.jpg")
+dr75 <- GSvals("eyes/dr75.jpg")
+dr76 <- GSvals("eyes/dr76.jpg")
+dr77 <- GSvals("eyes/dr77.jpg")
+dr78 <- GSvals("eyes/dr78.jpg")
+dr79 <- GSvals("eyes/dr79.jpg")
+dr80<- GSvals("eyes/dr80.jpg")
+dr81 <- GSvals("eyes/dr81.jpg")
+dr82 <- GSvals("eyes/dr82.jpg")
+dr83 <- GSvals("eyes/dr83.jpg")
+dr84 <- GSvals("eyes/dr84.jpg")
+dr85 <- GSvals("eyes/dr85.jpg")
+dr86 <- GSvals("eyes/dr86.jpg")
+dr87 <- GSvals("eyes/dr87.jpg")
+dr88 <- GSvals("eyes/dr88.jpg")
+dr89 <- GSvals("eyes/dr89.jpg")
+
+
+#Healthy Eyes
+h1 <- GSvals("eyes/h1.jpg")
+h2 <- GSvals("eyes/h2.jpg")
+h3 <- GSvals("eyes/h3.jpg")
+h4 <- GSvals("eyes/h4.jpg")
+h5 <- GSvals("eyes/h5.jpg")
+h6 <- GSvals("eyes/h6.jpg")
+h7 <- GSvals("eyes/h7.jpg")
+h8 <- GSvals("eyes/h8.jpg")
+h9 <- GSvals("eyes/h9.jpg")
+h10 <- GSvals("eyes/h10.jpg")
+h11 <- GSvals("eyes/h11.jpg")
+h12 <- GSvals("eyes/h12.jpg")
+h13 <- GSvals("eyes/h13.jpg")
+h14 <- GSvals("eyes/h14.jpg")
+h15 <- GSvals("eyes/h15.jpg")
+h16 <- GSvals("eyes/h16.jpg")
+h17 <- GSvals("eyes/h17.jpg")
+h18 <- GSvals("eyes/h18.jpg")
+h19 <- GSvals("eyes/h19.jpg")
+h20 <- GSvals("eyes/h20.jpg")
+h21 <- GSvals("eyes/h21.jpg")
+h22 <- GSvals("eyes/h22.jpg")
+h23 <- GSvals("eyes/h23.jpg")
+h24 <- GSvals("eyes/h24.jpg")
+h25 <- GSvals("eyes/h25.jpg")
+h26 <- GSvals("eyes/h26.jpg")
+h27 <- GSvals("eyes/h27.jpg")
+h28 <- GSvals("eyes/h28.jpg")
+h29 <- GSvals("eyes/h29.jpg")
+h30 <- GSvals("eyes/h30.jpg")
+h31 <- GSvals("eyes/h31.jpg")
+h32 <- GSvals("eyes/h32.jpg")
+h33 <- GSvals("eyes/h33.jpg")
+h34 <- GSvals("eyes/h34.jpg")
+h35 <- GSvals("eyes/h35.jpg")
+h36 <- GSvals("eyes/h36.jpg")
+h37 <- GSvals("eyes/h37.jpg")
+h38 <- GSvals("eyes/h38.jpg")
+h39 <- GSvals("eyes/h39.jpg")
+h40 <- GSvals("eyes/h40.jpg")
+
+
+### Assign 1 for Diabetic Retinopathy and 0 for Healthy eyes
+type = c(rep(1,89), rep(0,40))
+eye.df <- data.frame(rbind(
+  dr1,dr2,dr3,dr4,dr5,dr6,dr7,dr8,dr9,dr10,dr11,dr12,dr13,dr14,dr15,dr16,dr17,dr18,
+  dr19,dr20,dr21,dr22,dr23,dr24,dr25,dr26,dr27,dr28,dr29,dr30,dr31,dr32,dr33,dr34,
+  dr35,dr36,dr37,dr38,dr39,dr40,dr41,dr42,dr43,dr44,dr45,dr46,dr47,dr48,dr49,dr50,
+  dr51,dr52,dr53,dr54,dr55,dr56,dr57,dr58,dr59,dr60,dr61,dr62,dr63,dr64,dr65,dr66,
+  dr67,dr68,dr69,dr70,dr71,dr72,dr73,dr74,dr75,dr76,dr77,dr78,dr79,dr80,dr81,dr82,
+  dr83,dr84,dr85,dr86,dr87,dr88,dr89,h1,h2,h3,h4,h5,h6,h7,h8,h9,h10,h11,h12,h13,h14,
+  h15,h16,h17,h18,h19,h20,h21,h22,h23,h24,h25,h26,h27,h28,h29,h30,h31,h32,h33,h34,
+  h35,h36,h37,h38,h39,h40), 
+  
+  resp=type)
+```
+
+Take principal components of 100 predictors
+
+```{r}
+eye.df_noresp <- eye.df[,-ncol(eye.df)]
+pca.eye <- prcomp(eye.df_noresp, scale=T)
+summary(pca.eye) 
+biplot(pca.eye)
+rots <- pca.eye$rotation 
+dim(rots) 
+eye.mat <- as.matrix(eye.df_noresp[,1:ncol(eye.df_noresp)]) 
+dim(eye.mat) 
+pcs <- eye.mat %*% rots
+dim(pcs) 
+prcomp.df <- data.frame(pcs, resp = type)
+
+```
+
+LASSO on 100 predictors
+
+```{r}
+x <- data.matrix(eye.df[,-ncol(eye.df)])
+y <- data.matrix(eye.df[,ncol(eye.df)])
+test <- sample(1:nr, nr/2, rep=F)
+train <- setdiff(1:nr, test)
+x.train <- x[train,]
+y.train <- y[train,]
+x.test <- x[test,]
+y.test <- y[test,]
+
+cv.lasso <- cv.glmnet(x.train, y.train, alpha = 1, family="binomial")
+cv.lasso$lambda.min
+
+fit.lasso <- glmnet(x.train, y.train, alpha = 1, lambda = cv.lasso$lambda.min, family = "binomial")
+coef(fit.lasso)
+pred.lasso <- predict(fit.lasso, newx = x.test, type="class")
+print(as.numeric(pred.lasso))
+print(y.test)
+mean(as.numeric(pred.lasso) != y.test)
+```
